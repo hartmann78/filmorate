@@ -2,6 +2,7 @@ package com.practice.filmorate.storages;
 
 import com.practice.filmorate.exceptions.NotFoundException;
 import com.practice.filmorate.exceptions.ValidationException;
+import com.practice.filmorate.interfaces.UserStorage;
 import com.practice.filmorate.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class InMemoryUserStorage {
+public class InMemoryUserStorage implements UserStorage {
     private int userId = 0;
     private final Map<Long, User> users = new HashMap<>();
 
@@ -21,6 +22,15 @@ public class InMemoryUserStorage {
         return users.values();
     }
 
+    public User findUserById(long userId) {
+        return users.values()
+                .stream()
+                .filter(x -> x.getId() == userId)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь № %d не найден", userId)));
+    }
+
+    @Override
     public User createUser(User user) {
         if (users.containsKey(user.getId()))
             throw new ValidationException("Пользователь уже содержится в базе данных!");
@@ -30,6 +40,7 @@ public class InMemoryUserStorage {
         return user;
     }
 
+    @Override
     public User updateUser(User user) {
         checkUser(user);
         if (!users.containsKey(user.getId()) && user.getId() != 0) {
@@ -43,6 +54,11 @@ public class InMemoryUserStorage {
             }
             return user;
         }
+    }
+
+    @Override
+    public boolean deleteUser(User user) {
+        return users.remove(user.getId(), user);
     }
 
     public void checkUser(User user) {

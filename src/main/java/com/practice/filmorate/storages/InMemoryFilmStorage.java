@@ -2,6 +2,7 @@ package com.practice.filmorate.storages;
 
 import com.practice.filmorate.exceptions.NotFoundException;
 import com.practice.filmorate.exceptions.ValidationException;
+import com.practice.filmorate.interfaces.FilmStorage;
 import com.practice.filmorate.model.Film;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class InMemoryFilmStorage {
+public class InMemoryFilmStorage implements FilmStorage {
     private int filmId = 0;
     private final Map<Long, Film> films = new HashMap<>();
 
@@ -21,6 +22,15 @@ public class InMemoryFilmStorage {
         return films.values();
     }
 
+    public Film findFilmById(long filmId) {
+        return films.values()
+                .stream()
+                .filter(x -> x.getId() == filmId)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм № %d не найден", filmId)));
+    }
+
+    @Override
     public Film createFilm(Film film) {
         if (films.containsKey(film.getId()))
             throw new ValidationException("Фильм уже содержится в базе данных!");
@@ -30,6 +40,7 @@ public class InMemoryFilmStorage {
         return film;
     }
 
+    @Override
     public Film updateFilm(Film film) {
         checkFilm(film);
         if (!films.containsKey(film.getId()) && film.getId() != 0) {
@@ -43,6 +54,11 @@ public class InMemoryFilmStorage {
             }
             return film;
         }
+    }
+
+    @Override
+    public boolean deleteFilm(Film film) {
+        return films.remove(film.getId(), film);
     }
 
     public void checkFilm(Film film) {
