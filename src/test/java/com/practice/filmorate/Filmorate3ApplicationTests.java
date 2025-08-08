@@ -1,10 +1,10 @@
-package com.practice.filmorate2;
+package com.practice.filmorate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class FilmorateApplicationTests {
+class Filmorate3ApplicationTests {
 
 	@Test
 	void contextLoads() {

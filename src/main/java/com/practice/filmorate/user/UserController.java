@@ -1,10 +1,6 @@
-package com.practice.filmorate.controller;
+package com.practice.filmorate.user;
 
-import com.practice.filmorate.model.User;
-import com.practice.filmorate.service.UserService;
-import com.practice.filmorate.storages.InMemoryUserStorage;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,59 +12,57 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final InMemoryUserStorage inMemoryUserStorage;
 
     @GetMapping("/users")
     public Collection<User> findAll(HttpServletRequest request) {
         setLog(request);
-        return inMemoryUserStorage.findAll();
+        return userService.findAll();
     }
 
     @GetMapping("/users/{userId}")
-    public User findUserById(@PathVariable long userId, HttpServletRequest request) {
+    public User findUserById(@PathVariable Long userId, HttpServletRequest request) {
         setLog(request);
-        return inMemoryUserStorage.findUserById(userId);
+        return userService.findUserById(userId);
     }
 
     @PostMapping("/users")
-    public User createUser(@Valid @RequestBody User user, HttpServletRequest request) {
+    public User createUser(@RequestBody User user, HttpServletRequest request) {
         setLog(request);
-        return inMemoryUserStorage.createUser(user);
+        return userService.createUser(user);
     }
 
     @PutMapping("/users")
-    public User updateUser(@Valid @RequestBody User user, HttpServletRequest request) {
+    public User updateUser(@RequestBody User user, HttpServletRequest request) {
         setLog(request);
-        return inMemoryUserStorage.updateUser(user);
+        return userService.updateUser(user);
     }
 
     @DeleteMapping("/users")
-    public boolean deleteUser(@Valid @RequestBody User user, HttpServletRequest request) {
+    public void deleteUser(@RequestBody User user, HttpServletRequest request) {
         setLog(request);
-        return inMemoryUserStorage.deleteUser(user);
+        userService.deleteUser(user);
     }
 
-
     @GetMapping("/users/{id}/friends")
-    public Collection<User> friendsList(@PathVariable("id") long userId, HttpServletRequest request) {
+    public Collection<User> getFriendsList(@PathVariable("id") Long userId, HttpServletRequest request) {
         setLog(request);
-        return userService.friendsList(userId);
+        return userService.getFriendsList(userId);
     }
 
     @GetMapping("/users/{id}/friends/common/{otherId}")
-    public Collection<User> commonFriends(@PathVariable("id") long userId, @PathVariable long otherId, HttpServletRequest request) {
+    public Collection<User> commonFriends(@PathVariable("id") Long userId, @PathVariable Long otherId, HttpServletRequest request) {
         setLog(request);
         return userService.commonFriends(userId, otherId);
     }
 
     @PutMapping("/users/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable("id") long userId, @PathVariable long friendId, HttpServletRequest request) {
+    public void addFriend(@PathVariable("id") Long userId, @PathVariable Long friendId, HttpServletRequest request) {
         setLog(request);
         userService.addFriend(userId, friendId);
     }
 
     @DeleteMapping("/users/{id}/friends/{friendId}")
-    public void deleteFriend(@PathVariable("id") long userId, @PathVariable long friendId, HttpServletRequest request) {
+    public void deleteFriend(@PathVariable("id") Long userId, @PathVariable Long friendId, HttpServletRequest request) {
         setLog(request);
         userService.deleteFriend(userId, friendId);
     }
