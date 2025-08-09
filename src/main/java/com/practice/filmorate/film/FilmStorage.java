@@ -13,9 +13,9 @@ public interface FilmStorage {
 
     Film updateFilm(Film film);
 
+    void deleteFilm(Film film);
+
     void likeFilm(Long filmId, Long userId);
 
     void dislikeFilm(Long filmId, Long userId);
-
-    void deleteFilm(Film film);
 }

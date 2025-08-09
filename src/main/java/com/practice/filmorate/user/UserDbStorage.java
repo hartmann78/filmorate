@@ -17,8 +17,8 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Collection<User> findAll() {
-        String sqlQuery = "select user_id, login, email, name, email, birthday from users";
-        return jdbcTemplate.query(sqlQuery, this::mapRowToUser);
+        String sql = "select * from users";
+        return jdbcTemplate.query(sql, this::mapRowToUser);
     }
 
     private User mapRowToUser(ResultSet resultSet, int rowNum) throws SQLException {
@@ -33,9 +33,9 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User findUserById(Long userId) {
-        String sqlQuery = "select user_id, login, name, email, birthday from users where user_id = ?";
+        String sql = "select * from users where user_id = ?";
         try {
-            return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToUser, userId);
+            return jdbcTemplate.queryForObject(sql, this::mapRowToUser, userId);
         } catch (Exception e) {
             throw new NotFoundException("В базе данных не найден пользователь с id: " + userId);
         }
@@ -47,9 +47,9 @@ public class UserDbStorage implements UserStorage {
             throw new NotFoundException("Не существует пользователя с id: " + userId);
         }
 
-        String sqlQuery = "select * from users where user_id " +
+        String sql = "select * from users where user_id " +
                 "in (select second_user_id from user_friendship where first_user_id = ?)";
-        return jdbcTemplate.query(sqlQuery, this::mapRowToUser, userId);
+        return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
 
     @Override
@@ -74,12 +74,12 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User updateUser(User user) {
-        String sqlQuery = "update users set login = ?, " +
+        String sql = "update users set login = ?, " +
                 "name = ?, " +
                 "email = ?, " +
                 "birthday = ? " +
                 "where user_id = ?";
-        jdbcTemplate.update(sqlQuery,
+        jdbcTemplate.update(sql,
                 user.getLogin(),
                 user.getName(),
                 user.getEmail(),
@@ -90,12 +90,23 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void deleteUser(User user) {
-        String sqlQuery = "delete from users where user_id = ?" +
+        Long userId = user.getId();
+
+        String sql1 = "delete from user_friendship where first_user_id = ? or second_user_id = ?";
+        jdbcTemplate.update(sql1, userId, userId);
+
+        String sql2 = "delete from film_liked_by_users where user_id = ?";
+        jdbcTemplate.update(sql2, userId);
+
+        String sql3 = "delete from films_liked_by_user where user_id = ?";
+        jdbcTemplate.update(sql3, userId);
+
+        String sql4 = "delete from users where user_id = ?" +
                 " and login = ?" +
                 " and name = ?" +
                 " and email = ?" +
                 " and birthday = ?";
-        jdbcTemplate.update(sqlQuery,
+        jdbcTemplate.update(sql4,
                 user.getId(),
                 user.getLogin(),
                 user.getName(),
@@ -113,8 +124,8 @@ public class UserDbStorage implements UserStorage {
             throw new NotFoundException("Не существует пользователя с id: " + friendId);
         }
 
-        String sqlQuery = "insert into user_friendship (first_user_id, second_user_id) values (?, ?)";
-        jdbcTemplate.update(sqlQuery, userId, friendId);
+        String sql = "insert into user_friendship (first_user_id, second_user_id) values (?, ?)";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
@@ -127,7 +138,7 @@ public class UserDbStorage implements UserStorage {
             throw new NotFoundException("Не существует пользователя с id: " + friendId);
         }
 
-        String sqlQuery = "delete from user_friendship where first_user_id = ? and second_user_id = ?";
-        jdbcTemplate.update(sqlQuery, userId, friendId);
+        String sql = "delete from user_friendship where first_user_id = ? and second_user_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 }

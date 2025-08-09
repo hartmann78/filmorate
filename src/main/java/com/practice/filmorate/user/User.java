@@ -27,7 +27,7 @@ public class User {
         values.put("email", email);
         values.put("birthday", birthday);
         values.put("friends", friends);
-        values.put("likedFilms", likedFilms);
+        values.put("liked_films", likedFilms);
         return values;
     }
 }

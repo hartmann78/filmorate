@@ -17,22 +17,22 @@ public class GenreDbStorage implements GenreStorage {
 
     @Override
     public Collection<Genre> findAll() {
-        String sqlQuery = "select genre_id, name from genres";
-        return jdbcTemplate.query(sqlQuery, this::mapRowToGenre);
+        String sql = "select * from genres order by genre_id";
+        return jdbcTemplate.query(sql, this::mapRowToGenre);
     }
 
-    private Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
+    public Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
         return Genre.builder()
                 .id(resultSet.getLong("genre_id"))
-//                .name(resultSet.getString("name"))
+                .name(resultSet.getString("name"))
                 .build();
     }
 
     @Override
     public Genre findGenreById(Long genreId) {
-        String sqlQuery = "select name from genres where genre_id = ?";
+        String sql = "select * from genres where genre_id = ?";
         try {
-            return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToGenre, genreId);
+            return jdbcTemplate.queryForObject(sql, this::mapRowToGenre, genreId);
         } catch (Exception e) {
             throw new NotFoundException("В базе данных не найден жанр с id: " + genreId);
         }
@@ -50,18 +50,18 @@ public class GenreDbStorage implements GenreStorage {
 
     @Override
     public Genre updateGenre(Genre genre) {
-        String sqlQuery = "update genres set name = ? where genre_id = ?";
-        jdbcTemplate.update(sqlQuery,
-//                genre.getName(),
+        String sql = "update genres set name = ? where genre_id = ?";
+        jdbcTemplate.update(sql,
+                genre.getName(),
                 genre.getId());
         return genre;
     }
 
     @Override
     public void deleteGenre(Genre genre) {
-        String sqlQuery = "delete from genres where genre_id = ? and name = ?";
-        jdbcTemplate.update(sqlQuery,
-                genre.getId());
-//                genre.getName());
+        String sql = "delete from genres where genre_id = ? and name = ?";
+        jdbcTemplate.update(sql,
+                genre.getId(),
+                genre.getName());
     }
 }

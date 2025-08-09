@@ -1,7 +1,5 @@
 package com.practice.filmorate.film;
 
-import com.practice.filmorate.genre.GenreController;
-import com.practice.filmorate.mpa.MpaController;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +12,6 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class FilmController {
     private final FilmService filmService;
-    private final MpaController mpaController;
-    private final GenreController genreController;
 
     @GetMapping("/films")
     public Collection<Film> findAll(HttpServletRequest request) {

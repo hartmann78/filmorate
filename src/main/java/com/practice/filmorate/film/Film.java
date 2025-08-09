@@ -1,6 +1,7 @@
 package com.practice.filmorate.film;
 
 import com.practice.filmorate.genre.Genre;
+import com.practice.filmorate.mpa.Mpa;
 import com.practice.filmorate.user.User;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +21,7 @@ public class Film {
     private Duration duration;
     private List<User> likedUsers;
     private Set<Genre> genres;
-    private Long mpa;
+    private Mpa mpa;
 
     public long getDuration() {
         return duration.getSeconds();
@@ -31,9 +32,9 @@ public class Film {
         values.put("likes", likes);
         values.put("name", name);
         values.put("description", description);
-        values.put("releaseDate", releaseDate);
+        values.put("release_date", releaseDate);
         values.put("duration", duration);
-        values.put("likedUsers", likedUsers);
+        values.put("liked_users", likedUsers);
         values.put("genres", genres);
         values.put("mpa", mpa);
         return values;

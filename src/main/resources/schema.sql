@@ -1,12 +1,16 @@
-drop table if exists user_liked_films;
+-- delete relations --
 
-drop table if exists film_liked_users;
+drop table if exists films_liked_by_user;
+
+drop table if exists film_liked_to_users;
 
 drop table if exists user_friendship;
 
 drop table if exists films_genres;
 
 drop table if exists films_mpa;
+
+-- delete models --
 
 drop table if exists users;
 
@@ -16,10 +20,18 @@ drop table if exists genres;
 
 drop table if exists mpa;
 
+-- create models--
+
 create table mpa
 (
     mpa_id long auto_increment primary key,
     name   varchar not null unique
+);
+
+create table genres
+(
+    genre_id long auto_increment primary key,
+    name     varchar not null unique
 );
 
 create table users
@@ -34,18 +46,25 @@ create table users
 create table films
 (
     film_id      long auto_increment primary key,
-    likes        integer,
+    likes        integer check (likes >= 0),
     name         varchar,
     description  varchar,
     release_date date,
-    duration     long,
-    mpa          long references mpa (mpa_id)
+    duration     long
 );
 
-create table genres
+-- create relations --
+
+create table films_liked_by_user
 (
-    genre_id long auto_increment primary key,
-    name     varchar not null unique
+    user_id long references users (user_id) not null,
+    film_id long references films (film_id) not null
+);
+
+create table film_liked_to_users
+(
+    film_id long references films (film_id) not null,
+    user_id long references users (user_id) not null
 );
 
 create table user_friendship
@@ -54,23 +73,19 @@ create table user_friendship
     second_user_id long references users (user_id)                                         not null
 );
 
-create table user_liked_films
-(
-    user_id long references users (user_id) not null,
-    film_id long references films (film_id) not null
-);
-
-create table film_liked_users
-(
-    film_id long references films (film_id) not null,
-    user_id long references users (user_id) not null
-);
-
 create table films_genres
 (
     film_id  long references films (film_id),
     genre_id long references genres (genre_id)
 );
+
+create table films_mpa
+(
+    film_id long references films (film_id),
+    mpa_id  long references mpa (mpa_id)
+);
+
+-- insert mpa and genres --
 
 insert into mpa(mpa_id, name)
 values (1, 'G'),
@@ -78,7 +93,6 @@ values (1, 'G'),
        (3, 'PG-13'),
        (4, 'R'),
        (5, 'NC-17');
-
 
 insert into genres(genre_id, name)
 values (1, 'Комедия'),
