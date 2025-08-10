@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
+import java.util.*;
 
 @Repository("userDbStorage")
 @RequiredArgsConstructor
@@ -22,12 +22,20 @@ public class UserDbStorage implements UserStorage {
     }
 
     private User mapRowToUser(ResultSet resultSet, int rowNum) throws SQLException {
+        String sqlFriends = "select distinct second_user_id from user_friendship where first_user_id = ? order by second_user_id";
+        List<Long> friends = jdbcTemplate.queryForList(sqlFriends, Long.class, resultSet.getLong("user_id"));
+
+        String sqlLikedFilms = "select distinct film_id from users_like_films where user_id = ? order by film_id";
+        List<Long> likedFilms = jdbcTemplate.queryForList(sqlLikedFilms, Long.class, resultSet.getLong("user_id"));
+
         return User.builder()
                 .id(resultSet.getLong("user_id"))
                 .login(resultSet.getString("login"))
                 .name(resultSet.getString("name"))
                 .email(resultSet.getString("email"))
                 .birthday(resultSet.getDate("birthday").toLocalDate())
+                .friends(friends)
+                .likedFilms(likedFilms)
                 .build();
     }
 
@@ -48,7 +56,7 @@ public class UserDbStorage implements UserStorage {
         }
 
         String sql = "select * from users where user_id " +
-                "in (select second_user_id from user_friendship where first_user_id = ?)";
+                "in (select second_user_id from user_friendship where first_user_id = ? order by second_user_id)";
         return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
 
@@ -68,8 +76,7 @@ public class UserDbStorage implements UserStorage {
                 .withTableName("users")
                 .usingGeneratedKeyColumns("user_id");
         Long id = simpleJdbcInsert.executeAndReturnKey(user.toMap()).longValue();
-        user.setId(id);
-        return user;
+        return findUserById(id);
     }
 
     @Override
@@ -85,7 +92,8 @@ public class UserDbStorage implements UserStorage {
                 user.getEmail(),
                 user.getBirthday(),
                 user.getId());
-        return user;
+
+        return findUserById(user.getId());
     }
 
     @Override

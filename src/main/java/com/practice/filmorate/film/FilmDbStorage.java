@@ -21,13 +21,16 @@ import java.util.*;
 @RequiredArgsConstructor
 @Repository("filmDbStorage")
 public class FilmDbStorage implements FilmStorage {
-    @Autowired
-    @Qualifier("userDbStorage")
     private UserStorage userStorage;
-
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
     private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    @Qualifier("userDbStorage")
+    private void setUserStorage(UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
 
     @Override
     public Collection<Film> findAll() {
@@ -36,9 +39,9 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
-        String sqlGenres = "select genre_id from films_genres where film_id = ? order by genre_id";
+        String sqlGenres = "select distinct genre_id from films_genres where film_id = ? order by genre_id";
         List<Long> genresId = jdbcTemplate.queryForList(sqlGenres, Long.class, resultSet.getLong("film_id"));
-        Set<Genre> genres = new HashSet<>();
+        List<Genre> genres = new ArrayList<>();
 
         for (Long genreId : genresId) {
             genres.add(genreStorage.findGenreById(genreId));
@@ -78,19 +81,28 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film createFilm(Film film) {
-        checkMpa(film);
-        checkGenres(film);
+        if (film.getMpa() != null) {
+            checkMpa(film);
+        }
+
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            checkGenres(film);
+        }
 
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("films")
                 .usingGeneratedKeyColumns("film_id");
         Long id = simpleJdbcInsert.executeAndReturnKey(film.toMap()).longValue();
-        film.setId(id);
 
-        films_mpa_insert(film);
-        films_genres_insert(film);
+        if (film.getMpa() != null) {
+            films_mpa_insert(id, film.getMpa().getId());
+        }
 
-        return film;
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            films_genres_insert(id, film.getGenres());
+        }
+
+        return findFilmById(id);
     }
 
     @Override
@@ -119,21 +131,22 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId());
 
         if (film.getMpa() != null) {
-            films_mpa_delete(film);
-            films_mpa_insert(film);
+            films_mpa_delete(film.getId());
+            films_mpa_insert(film.getId(), film.getMpa().getId());
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            films_genres_delete(film);
-            films_genres_insert(film);
+            films_genres_delete(film.getId());
+            films_genres_insert(film.getId(), film.getGenres());
         }
-        return film;
+
+        return findFilmById(film.getId());
     }
 
     @Override
     public void deleteFilm(Film film) {
-        films_mpa_delete(film);
-        films_genres_delete(film);
+        films_mpa_delete(film.getId());
+        films_genres_delete(film.getId());
 
         String sql1 = "delete from film_liked_by_users where film_id = ?";
         jdbcTemplate.update(sql1, film.getId());
@@ -161,14 +174,13 @@ public class FilmDbStorage implements FilmStorage {
         findFilmById(filmId);
         userStorage.findUserById(userId);
 
-        String sql1 = "insert into film_liked_to_users (film_id, user_id) values (?, ?)";
-        jdbcTemplate.update(sql1, filmId, userId);
+        String sql1 = "insert into users_like_films (user_id, film_id) values (?, ?)";
+        jdbcTemplate.update(sql1, userId, filmId);
 
-        String sql2 = "insert into films_liked_by_user (user_id, film_id) values (?, ?)";
-        jdbcTemplate.update(sql2, userId, filmId);
-
-        String sql3 = "update films set likes = likes + 1 where film_id = ?";
-        jdbcTemplate.update(sql3, filmId);
+        String sql2 = "update films set likes = " +
+                "(select count(user_id) from users_like_films where film_id = ?) " +
+                "where film_id = ?";
+        jdbcTemplate.update(sql2, filmId, filmId);
     }
 
     @Override
@@ -176,14 +188,13 @@ public class FilmDbStorage implements FilmStorage {
         findFilmById(filmId);
         userStorage.findUserById(userId);
 
-        String sql1 = "delete from film_liked_to_users where film_id = ? and user_id = ?";
-        jdbcTemplate.update(sql1, filmId, userId);
+        String sql1 = "delete from users_like_films where user_id = ? and film_id = ?";
+        jdbcTemplate.update(sql1, userId, filmId);
 
-        String sql2 = "delete from films_liked_by_user where user_id = ? and film_id = ?";
-        jdbcTemplate.update(sql2, userId, filmId);
-
-        String sql3 = "update films set likes = likes - 1 where film_id = ? and likes > -1";
-        jdbcTemplate.update(sql3, filmId);
+        String sql2 = "update films set likes = " +
+                "(select count(user_id) from users_like_films where film_id = ?) " +
+                "where film_id = ?";
+        jdbcTemplate.update(sql2, filmId, filmId);
     }
 
     private void checkMpa(Film film) {
@@ -197,25 +208,25 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    private void films_mpa_insert(Film film) {
+    private void films_mpa_insert(Long filmId, Long mpaId) {
         String sql = "insert into films_mpa (film_id, mpa_id) values (?, ?)";
-        jdbcTemplate.update(sql, film.getId(), film.getMpa().getId());
+        jdbcTemplate.update(sql, filmId, mpaId);
     }
 
-    private void films_genres_insert(Film film) {
+    private void films_genres_insert(Long filmId, List<Genre> genres) {
         String sql = "insert into films_genres (film_id, genre_id) values (?, ?)";
-        for (Genre genre : film.getGenres()) {
-            jdbcTemplate.update(sql, film.getId(), genre.getId());
+        for (Genre genre : genres) {
+            jdbcTemplate.update(sql, filmId, genre.getId());
         }
     }
 
-    private void films_mpa_delete(Film film) {
+    private void films_mpa_delete(Long filmId) {
         String sql1 = "delete from films_mpa where film_id = ?";
-        jdbcTemplate.update(sql1, film.getId());
+        jdbcTemplate.update(sql1, filmId);
     }
 
-    private void films_genres_delete(Film film) {
+    private void films_genres_delete(Long filmId) {
         String sql2 = "delete from films_genre where film_id = ?";
-        jdbcTemplate.update(sql2, film.getId());
+        jdbcTemplate.update(sql2, filmId);
     }
 }

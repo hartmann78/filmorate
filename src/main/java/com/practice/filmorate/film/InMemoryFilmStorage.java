@@ -10,13 +10,18 @@ import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
-@Repository("filmStorageImpl")
-public class FilmStorageImpl implements FilmStorage {
-    private long globalFilmId = 0;
-    @Autowired
-    @Qualifier("userStorageImpl")
+@Repository("inMemoryFilmStorage")
+public class InMemoryFilmStorage implements FilmStorage {
     private UserStorage userStorage;
+
+    private long globalFilmId = 0;
     private final Map<Long, Film> films = new HashMap<>();
+
+    @Autowired
+    @Qualifier("inMemoryUserStorage")
+    private void setUserStorage(UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
 
     @Override
     public Collection<Film> findAll() {
@@ -74,10 +79,9 @@ public class FilmStorageImpl implements FilmStorage {
         User user = userStorage.findUserById(userId);
         Film film = findFilmById(filmId);
 
-        user.getLikedFilms().add(film);
-        film.getLikedUsers().add(user);
+        user.getLikedFilms().add(filmId);
 
-        film.setLikes(film.getLikedUsers().size());
+        film.setLikes(film.getLikes() + 1);
     }
 
     @Override
@@ -85,13 +89,12 @@ public class FilmStorageImpl implements FilmStorage {
         User user = userStorage.findUserById(userId);
         Film film = findFilmById(filmId);
 
-        if (!user.getLikedFilms().contains(film) || !film.getLikedUsers().contains(user)) {
+        if (!user.getLikedFilms().contains(filmId)) {
             return;
         }
 
-        user.getLikedFilms().remove(film);
-        film.getLikedUsers().remove(user);
+        user.getLikedFilms().remove(filmId);
 
-        film.setLikes(film.getLikedUsers().size());
+        film.setLikes(film.getLikes() - 1);
     }
 }

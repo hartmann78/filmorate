@@ -7,9 +7,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
-@Repository("userStorageImpl")
+@Repository("inMemoryUserStorage")
 @RequiredArgsConstructor
-public class UserStorageImpl implements UserStorage {
+public class InMemoryUserStorage implements UserStorage {
     private Long globalUserId = 0L;
     private final Map<Long, User> users = new HashMap<>();
 
@@ -28,7 +28,7 @@ public class UserStorageImpl implements UserStorage {
 
     @Override
     public Collection<User> getFriendsList(Long userId) {
-        return findUserById(userId).getFriends();
+        return findUserById(userId).getFriends().stream().map(this::findUserById).toList();
     }
 
     @Override
@@ -36,16 +36,35 @@ public class UserStorageImpl implements UserStorage {
         User user = findUserById(userId);
         User other = findUserById(otherId);
 
-        Collection<User> userFriends = user.getFriends();
-        Collection<User> otherFriends = other.getFriends();
+        Collection<User> userFriends = new ArrayList<>();
+
+        for (Long id : user.getFriends()) {
+            userFriends.add(findUserById(id));
+        }
+
+        Collection<User> otherFriends = new ArrayList<>();
+
+        for (Long id : other.getFriends()) {
+            otherFriends.add(findUserById(id));
+        }
 
         return userFriends.stream().filter(otherFriends::contains).toList();
     }
 
     @Override
     public User createUser(User user) {
-        if (users.containsKey(user.getId()))
+        if (users.containsKey(user.getId())) {
             throw new ValidationException("Пользователь уже содержится в базе данных!");
+        }
+
+        if (user.getFriends() == null) {
+            user.setFriends(new ArrayList<>());
+        }
+
+        if (user.getLikedFilms() == null) {
+            user.setLikedFilms(new ArrayList<>());
+        }
+
         user.setId(++globalUserId);
         users.put(user.getId(), user);
         return user;
@@ -71,8 +90,8 @@ public class UserStorageImpl implements UserStorage {
         User user = findUserById(userId);
         User friend = findUserById(friendId);
 
-        user.getFriends().add(friend);
-        friend.getFriends().add(user);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId);
     }
 
     @Override
@@ -80,12 +99,12 @@ public class UserStorageImpl implements UserStorage {
         User user = findUserById(userId);
         User friend = findUserById(friendId);
 
-        if (!user.getFriends().contains(friend) || !friend.getFriends().contains(user)) {
+        if (!user.getFriends().contains(friendId) || !friend.getFriends().contains(userId)) {
             return;
         }
 
-        user.getFriends().remove(friend);
-        friend.getFriends().remove(user);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
     }
 
     @Override

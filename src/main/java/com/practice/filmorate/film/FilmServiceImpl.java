@@ -10,9 +10,13 @@ import java.util.Collection;
 
 @Service
 public class FilmServiceImpl implements FilmService {
+    private FilmStorage filmStorage;
+
     @Autowired
     @Qualifier("filmDbStorage")
-    private FilmStorage filmStorage;
+    private void setFilmStorage(FilmStorage filmStorage) {
+        this.filmStorage = filmStorage;
+    }
 
     @Override
     public Collection<Film> findAll() {

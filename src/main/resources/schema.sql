@@ -1,8 +1,6 @@
 -- delete relations --
 
-drop table if exists films_liked_by_user;
-
-drop table if exists film_liked_to_users;
+drop table if exists users_like_films;
 
 drop table if exists user_friendship;
 
@@ -55,16 +53,10 @@ create table films
 
 -- create relations --
 
-create table films_liked_by_user
+create table users_like_films
 (
     user_id long references users (user_id) not null,
     film_id long references films (film_id) not null
-);
-
-create table film_liked_to_users
-(
-    film_id long references films (film_id) not null,
-    user_id long references users (user_id) not null
 );
 
 create table user_friendship

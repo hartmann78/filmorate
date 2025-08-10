@@ -10,9 +10,13 @@ import java.util.Collection;
 
 @Service
 public class UserServiceImpl implements UserService {
+    private UserStorage userStorage;
+
     @Autowired
     @Qualifier("userDbStorage")
-    private UserStorage userStorage;
+    private void setUserStorage(UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
 
     @Override
     public Collection<User> findAll() {
